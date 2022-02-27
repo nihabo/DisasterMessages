@@ -12,3 +12,7 @@
     `python run.py`
 
 3. Go to http://0.0.0.0:3001/
+
+### Remarks on the dataset
+The given dataset has been clean by:
+- removing rows in which "related" category had value = 2

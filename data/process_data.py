@@ -70,6 +70,10 @@ def save_data(df, database_filename):
 
 
 def main():
+     """ Executing all steps to Load, Clean and Save the data
+         all necessary filepaths are given by userinput
+     """
+  
     if len(sys.argv) == 4:
 
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
