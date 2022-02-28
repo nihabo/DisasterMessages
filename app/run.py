@@ -15,6 +15,12 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 def tokenize(text):
+    """ predefined tokenizer method, required to load the files with joblib
+    args:
+        text : string - Complete Message text
+    return:
+        tokenized: list(list(string)) - List of sentences which are again split to list of words
+    """
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
@@ -26,22 +32,38 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///data/DisasterResponse.db')
+df = pd.read_sql_table("Message_Category", engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
+    """ called when /index page is opened, used to create the visuals to be displayed
+    return:
+        rendertemplate - required to display the graphs
+    """
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+  
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+    
+    
+    # prepare data for Graph 2: Distribution of Requests/Offers in different genres
+    df["request_offer"] = ["request" if value == 1 else "offer" for value in df["request"]]
+    
+    count = []
+    for genre in genre_names:
+        df_genre = df[df["genre"] == genre]
+        count.append(df_genre.groupby("request_offer").count()["message"])
+    labels = ["request", "offer"]
+    
+
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
@@ -63,6 +85,28 @@ def index():
                     'title': "Genre"
                 }
             }
+        },
+        {
+            'data': [
+                {
+                    'x' : labels,
+                    'y' : count[i],
+                    'name' : genre_names[i],
+                    'type' : 'bar'
+                } for i in range(len(genre_names))
+                
+            ],
+
+            'layout': {
+                'title': 'Distribution of Requests and offers in different genres',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Request vs. Offers"
+                },
+                'barmode': 'stack'
+            }
         }
     ]
     
@@ -77,6 +121,10 @@ def index():
 # web page that handles user query and displays model results
 @app.route('/go')
 def go():
+    """ called when user presses "go" and wants to classify a sentence given by user input
+    return:
+        rendertemplate - required to show the visuals for the classification result
+    """
     # save user input in query
     query = request.args.get('query', '') 
 
@@ -93,6 +141,8 @@ def go():
 
 
 def main():
+    """ main method called every time this .py file is executed, starts the app
+    """
     app.run(host='0.0.0.0', port=3001, debug=True)
 
 

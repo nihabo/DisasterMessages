@@ -12,12 +12,12 @@ def load_data(messages_filepath, categories_filepath):
     return:
         df: pd.DataFrame - contains the merged data for messages & categories
     """
-    #load messages data
-    messages = pd.read_csv("messages.csv")
+    # load messages data
+    messages = pd.read_csv(messages_filepath)
     messages.head()
     
     # load categories dataset
-    categories = pd.read_csv("categories.csv")
+    categories = pd.read_csv(categories_filepath)
     categories.head()
     
     # merge datasets
@@ -50,6 +50,18 @@ def clean_data(df):
     df = df.drop("categories", axis = 1)  
     df = pd.merge(df, categories, left_index = True, right_index = True)
     
+    # remove entries other than 0 or 1
+    df = df[(df["related"] == 0) | (df["related"] == 1)]
+    
+    f = open("num_category_values", "w")
+    
+    f.write(f"Total datasets: {df.shape[0]} \n \n")
+    
+    for column in categories:
+        f.write(f"Messages classified as {column}: {df[column].sum()} \n")
+                                                       
+    f.close()
+    
     # drop duplicates
     df = df.drop_duplicates()
     
@@ -66,16 +78,16 @@ def save_data(df, database_filename):
     # setup engine to connect to database
     engine = create_engine(f'sqlite:///{database_filename}')
     # store data to database
-    df.to_sql('Message_Category', engine, index=False)  
+    df.to_sql('Message_Category', engine, index=False, if_exists="replace")  
 
 
 def main():
-     """ Executing all steps to Load, Clean and Save the data
+    """ Executing all steps to Load, Clean and Save the data
          all necessary filepaths are given by userinput
-     """
-  
-    if len(sys.argv) == 4:
+    """
 
+    if len(sys.argv) == 4:
+        
         messages_filepath, categories_filepath, database_filepath = sys.argv[1:]
 
         print('Loading data...\n    MESSAGES: {}\n    CATEGORIES: {}'

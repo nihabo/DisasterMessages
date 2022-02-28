@@ -16,9 +16,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 
+# to check runtime
+from datetime import datetime
+
 
 def load_data(database_filepath):
-     """ Loads the Data from the database and stores it in feature/target dataframe
+    """ Loads the Data from the database and stores it in feature/target dataframe
     args:
         database_filepath : string - contains the path for the database e.g. example.db
     return:
@@ -54,7 +57,7 @@ def tokenize(text):
 
 
 def build_model():
-     """ Builds up the Machine Learning model as GridSearch by using a pipeline
+    """ Builds up the Machine Learning model as GridSearch by using a pipeline
     return:
         cv: GridSearchCV - Machine Learning model containing parameters which can be used for                               GridSearch
     """
@@ -68,10 +71,10 @@ def build_model():
     parameters = {'vect__stop_words': [None, "english"],
              #'vect__binary': [True, False],
              'tfidf__smooth_idf': [True, False],
-             #'tfidf__use_idf': [True,False],
-             'clf__estimator': [RandomForestClassifier(), BaggingClassifier()]}
+             'tfidf__use_idf': [True,False]}#,
+             #'clf__estimator': [RandomForestClassifier(), BaggingClassifier()]}
 
-    cv = GridSearchCV(pipeline, parameters)
+    cv = GridSearchCV(pipeline, parameters, verbose = 5, n_jobs=-1)
     
     return cv
 
@@ -85,11 +88,17 @@ def evaluate_model(model, X_test, Y_test, category_names):
         category_names: list(string) - names of all target categories
     """
     Y_pred = model.predict(X_test)
-
-    print("Best Parameters: " + model.best_params_)
-
+    
+    f = open("results" + datetime.now().strftime("%d%m%Y_%H%M%S"), "w")
+    f.write(f"Best Parameters: {model.best_params_} \n")
+    
+    print("Best Parameters: ",  model.best_params_)
+    
     for i, col in enumerate(category_names):
-        print(classification_report(Y_test[col], Y_pred_tuned[:,i], target_names=[col + "_0",               col + "_1", col + "_other"]))
+        print(classification_report(Y_test[col], Y_pred[:,i], target_names=[col + "_0", col + "_1", col + "_other"]))
+        f.write(f"{classification_report(Y_test[col], Y_pred[:,i], target_names=[col + '_0', col + '_1', col + '_other'])} \n")
+        
+    f.close()
 
 
 def save_model(model, model_filepath):
@@ -112,13 +121,13 @@ def main():
         X, Y, category_names = load_data(database_filepath)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
         
-        print('Building model...')
+        print(datetime.now().strftime("%H:%M:%S"), 'Building model...')
         model = build_model()
         
-        print('Training model...')
+        print(datetime.now().strftime("%H:%M:%S"), 'Training model...')
         model.fit(X_train, Y_train)
         
-        print('Evaluating model...')
+        print(datetime.now().strftime("%H:%M:%S"), 'Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
 
         print('Saving model...\n    MODEL: {}'.format(model_filepath))
